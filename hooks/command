@@ -91,26 +91,6 @@ version=${version:-""}
 git_owner=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 1)
 git_repo=$(echo "${BUILDKITE_PLUGIN_GORELEASER_REPO_OVERRIDE:-$BUILDKITE_REPO}" | cut -d: -f 2 | cut -d/ -f 2 | cut -d. -f 1)
 
-# github
-if [ $github -eq 1 ]; then
-    github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
-    github_token=${github_token:-$GITHUB_TOKEN}
-    if [ -z $github_token ]; then
-        echo "Cannot find GITHUB_TOKEN"
-        exit 1
-    fi
-
-    # ssh
-    if [ $ssh -eq 1 ]; then
-        ssh -T git@github.com | echo "Test github with ssh"
-        git config --add --global url."git@github.com:".insteadOf https://github.com        
-        #export GOPROXY=direct
-        if [ "$goprivate" != "" ]; then
-            export GOPRIVATE=$goprivate
-        fi
-    fi
-fi
-
 
 #
 # docker
@@ -236,6 +216,7 @@ for docker_provider in "${docker_providers[@]}"; do
         docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
         docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
         image=${image:-$name}
+        github=1
 
         if [ -z "$docker_auth_secret" ]; then
             docker_auth_secret=$github_token
@@ -284,6 +265,22 @@ if [ $docker_buildkit -gt 0 ]; then
     fi
 fi
 
+# github
+if [ $github -gt 0 ]; then
+    github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
+    github_token=${github_token:-$GITHUB_TOKEN}
+    if [ -z $github_token ]; then
+        echo "Cannot find GITHUB_TOKEN"
+        exit 1
+    fi
+
+    # ssh
+    if [ $ssh -gt 0 ]; then
+        ssh -T git@github.com | echo "Test github with ssh"
+        git config --add --global url."git@github.com:".insteadOf https://github.com        
+    fi    
+fi
+
 #
 # goreleaser
 #
@@ -326,6 +323,11 @@ if [ ! -x "$go_binary" ]; then
     cd $wrkdir
 fi    
 go version
+#export GOPROXY=direct
+if [ "$goprivate" != "" ]; then
+    echo "GOPRIVATE=${goprivate}"
+    export GOPRIVATE=$goprivate
+fi
 
 #
 # test
