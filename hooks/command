@@ -287,7 +287,6 @@ else
     tar -zxvf "${goreleaser_file}"
     rm "${goreleaser_file}"
     chmod +x goreleaser
-    ls -lah
     goreleaser_binary="${tmpdir}/goreleaser"
     if [ ! -x $goreleaser_binary ]; then
         echo "${goreleaser_binary} is not executable"
