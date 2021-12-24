@@ -94,7 +94,7 @@ git_repo=$(echo "${BUILDKITE_PLUGIN_GORELEASER_REPO_OVERRIDE:-$BUILDKITE_REPO}" 
 
 #
 # docker
-# 
+#
 
 # docker - check if a key is set and it exists in env, if not use default env
 docker_login=1
@@ -129,13 +129,13 @@ for docker_provider in "${docker_providers[@]}"; do
     docker_role=${BUILDKITE_PLUGIN_GORELEASER_ROLE:-""}
     docker_login=1
     docker_logged_in=0
-    if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then        
+    if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
         echo "Using aws ecr"
 
         ###
         echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
         awscli="aws"
-        aws_cli_ver_file="${tmpdir}/aws_cli_ver.txt"        
+        aws_cli_ver_file="${tmpdir}/aws_cli_ver.txt"
         aws --version > $aws_cli_ver_file 2>&1
         cat $aws_cli_ver_file
         aws_cli_v1=$(grep -c "aws-cli/1" "${aws_cli_ver_file}")
@@ -157,7 +157,7 @@ for docker_provider in "${docker_providers[@]}"; do
                 $awscli --version
                 cd ${wrkdir}
             fi
-        fi        
+        fi
         ###
 
         docker_registry_region=${BUILDKITE_PLUGIN_GORELEASER_AWS_REGION}
@@ -276,9 +276,9 @@ if [ $github -gt 0 ]; then
 
     # ssh
     if [ $ssh -gt 0 ]; then
-        ssh -T git@github.com | echo "Test github with ssh"
-        git config --add --global url."git@github.com:".insteadOf https://github.com        
-    fi    
+        git config --add --global url."git@github.com:".insteadOf https://github.com
+        #ssh -T git@github.com | echo "Test github with ssh"
+    fi
 fi
 
 #
@@ -321,7 +321,7 @@ if [ ! -x "$go_binary" ]; then
     tar -C "${tmpdir}/" -xzf go.tar.gz
     export PATH=$PATH:$go_path/bin
     cd $wrkdir
-fi    
+fi
 go version
 #export GOPROXY=direct
 if [ "$goprivate" != "" ]; then
