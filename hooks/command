@@ -1,0 +1,299 @@
+#!/usr/bin/env bash
+# Reads a list from plugin config into a global result array
+# Returns success if values were read
+plugin_read_list_into_result() {
+  result=()
+
+  for prefix in "$@" ; do
+    local i=0
+    local parameter="${prefix}_${i}"
+
+    if [[ -n "${!prefix:-}" ]] ; then
+      echo "🚨 Plugin received a string for $prefix, expected an array" >&2
+      exit 1
+    fi
+
+    while [[ -n "${!parameter:-}" ]]; do
+      result+=("${!parameter}")
+      i=$((i+1))
+      parameter="${prefix}_${i}"
+    done
+  done
+
+  [[ ${#result[@]} -gt 0 ]] || return 1
+}
+
+# https://buildkite.com/docs/pipelines/writing-build-scripts
+# https://buildkite.com/docs/pipelines/writing-build-scripts#configuring-bash
+# https://ss64.com/bash/syntax-condition.html
+set -eo pipefail
+
+# common
+# aws=$(whereis aws)
+# if [ -x $aws ]; then
+#     aws --version
+# else
+#     echo "aws command not exists"
+# fi
+# aws=$(whereis docker)
+# if [ -x $aws ]; then
+#     docker --version
+# else
+#     echo "docker command not exists"
+# fi
+
+pwd=$(pwd)
+testcommand=${BUILDKITE_PLUGIN_GORELEASER_TEST_COMMAND:-"echo no test command on image:"}
+nocache=${BUILDKITE_PLUGIN_GORELEASER_NOCACHE:-1}
+ssh=${BUILDKITE_PLUGIN_GORELEASER_SSH:-0}
+ssh_file=${BUILDKITE_PLUGIN_GORELEASER_SSH_FILE:-"~/.ssh/id_rsa"}
+github=${BUILDKITE_PLUGIN_GORELEASER_GITHUB:-0}
+goreleaser_binary="/usr/local/bin/goreleaser"
+goreleaser_config=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_CONFIG:-".goreleaser.yml"}
+goreleaser_version=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_VERSION:-"v1.2.2"}
+goreleaser_snapshot=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_SNAPSHOT:-0}
+build=${DOCKER_DEFAULT_BUILD:-1}
+build=${BUILDKITE_PLUGIN_GORELEASER_BUILD:-$build}
+push=${DOCKER_DEFAULT_PUSH:-1}
+push=${BUILDKITE_PLUGIN_GORELEASER_PUSH:-$push}
+
+buildkite_agent=${BUILDKITE_PLUGIN_GORELEASER_AGENT:-buildkite-agent}
+docker=${BUILDKITE_PLUGIN_GORELEASER_DOCKER:-docker}
+debug=${BUILDKITE_PLUGIN_GORELEASER_DEBUG:-0}
+if [ $debug -gt 0 ]; then
+    set -eox pipefail
+
+    if [ $debug -eq 2 ]; then
+        env
+    fi
+
+    $docker version
+    $docker ps
+    aws --version
+    whoami
+    pwd
+fi
+
+# version
+version_meta=`$buildkite_agent meta-data get version || true`
+version=${BUILDKITE_PLUGIN_GORELEASER_VERSION:-$version_meta}
+version=${version:-$BUILDKITE_TAG}
+version=${version:-""}
+
+# git
+git_owner=$(echo "$BUILDKITE_REPO" | cut -d: -f 2 | cut -d/ -f 1)
+git_repo=$(echo "${BUILDKITE_PLUGIN_GORELEASER_REPO_OVERRIDE:-$BUILDKITE_REPO}" | cut -d: -f 2 | cut -d/ -f 2 | cut -d. -f 1)
+
+# github
+if [ $github -eq 1 ]; then
+    github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
+    github_token=${github_token:-$GITHUB_TOKEN}
+    if [ -z $github_token ]; then
+        echo "Cannot find GITHUB_TOKEN"
+        exit 1
+    fi
+fi
+
+#
+# docker
+# 
+
+# docker - check if a key is set and it exists in env, if not use default env
+docker_file=$file
+docker_login=$push          # we dont need to login if not going to push
+docker_buildkit=${BUILDKITE_PLUGIN_GORELEASER_BUILDKIT:-$DOCKER_BUILDKIT}
+docker_buildkit=${docker_buildkit:-1}
+docker_registry_region=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY_REGION}
+docker_registry_account=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY_ACCOUNT}
+docker_registry_required=1
+declare -a docker_providers
+if plugin_read_list_into_result BUILDKITE_PLUGIN_GORELEASER_PROVIDERS ; then
+  for key in "${!result[@]}" ; do
+      docker_providers["$key"]="${result["$key"]}"
+  done
+else
+  for key in "${!DOCKER_PROVIDERS[@]}" ; do
+      docker_providers["$key"]="${DOCKER_PROVIDERS["$key"]}"
+  done
+fi
+echo "docker_providers[@]" "${docker_providers[@]}"
+declare -a docker_registries
+declare -A image_names
+for docker_provider in "${docker_providers[@]}"; do
+    image=${BUILDKITE_PLUGIN_GORELEASER_IMAGE:-""}
+    goreleaser_image=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_IMAGE:-"${image}:latest"}
+    docker_registry=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY}
+    docker_auth_user=${BUILDKITE_PLUGIN_GORELEASER_AUTH_USER}
+    docker_auth_secret=${BUILDKITE_PLUGIN_GORELEASER_AUTH_SECRET}
+    docker_role=${BUILDKITE_PLUGIN_GORELEASER_ROLE:-""}
+    docker_logged_in=0
+    if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
+        name=${BUILDKITE_PLUGIN_GORELEASER_NAME_AWS:-$git_repo}
+        echo "Using aws ecr"
+
+        ###
+        echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
+        awscli="aws"
+        aws --version > aws_cli_ver.txt 2>&1
+        cat aws_cli_ver.txt
+        aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
+        if [ $aws_cli_v1 -gt 0 ]; then
+            if [ ! -x "aws/dist/aws" ]; then
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                unzip -q awscliv2.zip
+                awscli=${wrkdir}/aws/dist/aws
+                $awscli --version
+            fi
+        fi
+        ###
+
+        docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
+        docker_registry_name=${name:-$AWS_ECR_REGISTRY_NAME}
+        docker_registry_name=${name:-$BUILDKITE_PIPELINE_SLUG}
+
+        docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
+        docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
+        docker_role=${AWS_ECR_AUTH_ROLE}
+        docker_registry_region=${docker_registry_region:-$AWS_DEFAULT_REGION}
+
+        image=${image:=$docker_registry_name}
+
+        export AWS_ACCESS_KEY_ID=${docker_auth_user}
+        export AWS_SECRET_ACCESS_KEY=${docker_auth_secret}
+        export AWS_DEFAULT_REGION=${docker_registry_region}
+
+        # check ecr
+        if [ "$docker_registry" == "" ]; then
+            docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+            if [ "$docker_registry" == "" ]; then
+                echo "Create registry ${docker_registry_name}"
+                $awscli ecr create-repository --repository-name "${docker_registry_name}"
+                docker_registry=$($awscli ecr describe-repositories --repository-names "${docker_registry_name}" --output text --query 'repositories[0].repositoryUri' | cut -f1 -d/ || true)
+            fi
+            if [ "$docker_registry" == "" ]; then
+                docker_registry="${docker_registry_account}.dkr.ecr.${docker_registry_region}.amazonaws.com"
+            fi
+        fi
+
+        # Only login if docker_login is greater than zero
+        echo "Login [${docker_registry}]"
+        $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+        docker_logged_in=1
+    elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
+        name=${BUILDKITE_PLUGIN_GORELEASER_NAME_DOCKERHUB:-$git_repo}
+        namespace=${BUILDKITE_PLUGIN_GORELEASER_NAMESPACE_DOCKERHUB:-$git_owner}
+        echo "Using dockerhub"
+        DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
+        DOCKER_AUTH_USER=${DOCKERHUB_USER}
+        DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
+        docker_registry=${DOCKERHUB_REGISTRY}
+        docker_registry_required=0
+        docker_auth_user=${DOCKERHUB_USER}
+        docker_auth_secret=${DOCKERHUB_SECRET}
+        image=${image:="${namespace}/${name}"}
+    elif [ "$docker_provider" = "github" ]; then
+        name=${BUILDKITE_PLUGIN_GORELEASER_NAME_GITHUB:-$git_repo}
+        docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
+        docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
+        docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
+        image=${image:-$name}
+
+        if [ -z "$docker_auth_secret" ]; then
+            docker_auth_secret=$github_token
+        fi
+    fi
+
+    if [ $docker_registry_required -eq 0 ]; then
+        docker_registry=${docker_registry:-$DOCKER_REGISTRY}
+        docker_auth_user=${docker_auth_user:-$DOCKER_AUTH_USER}
+        docker_auth_secret=${docker_auth_secret:-$DOCKER_AUTH_SECRET}
+    fi
+
+    if [ -z "$docker_provider" ]; then
+        echo "DOCKER_PROVIDER is empty"
+        exit 1
+    elif [ -z "$docker_registry" ] && [ $docker_registry_required -eq 1 ]; then
+        echo "DOCKER_REGISTRY is empty"
+        exit 1
+    elif [ -z "$docker_auth_user" ]; then
+        echo "DOCKER_AUTH_USER is empty"
+        exit 1
+    elif [ -z "$docker_auth_secret" ]; then
+        echo "DOCKER_AUTH_SECRET is empty"
+        exit 1
+    fi
+
+    # We want only to login if needed
+    if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
+        if [ "${docker_role}" == "" ]; then
+            echo "Login into ${docker_registry}"
+            echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin "${docker_registry}"
+        else
+            echo "TODO: fix assume role"
+            exit 1
+        fi
+    fi
+    docker_registries+=( "$docker_registry" )
+    image_names["$docker_registry"]=$image
+done
+
+if [ $docker_buildkit -gt 0 ]; then
+    export DOCKER_BUILDKIT=1
+    args+=" --ssh=default"
+    if [ $debug -gt 0 ]; then
+        args+=" --progress plain"
+    fi
+fi
+
+#
+# goreleaser
+#
+if [ -x "$goreleaser_binary" ]; then
+    echo "$goreleaser_binary allreay installed"
+else
+    # TODO: check sum
+    gorelaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
+    echo "install goreleaser (${gorelaser_url})"
+    curl -L "${gorelaser_url}" -o "goreleaser.tar.gz"
+    tar -zxvf goreleaser.tar.gz
+    chmod +x goreleaser
+    goreleaser_binary="${wrkdir}/goreleaser"
+fi
+
+#
+# go
+#
+go_path=/usr/local/go
+go_binary="${go_path}/bin/go"
+if [ ! -x "$go_binary" ]; then
+    go_path="${wrkdir}/go"
+    mkdir -p $go_path
+    go_version="1.17.5"
+    go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
+    curl -L "${go_url}" -o "go.tar.gz"
+    tar -C "${wrkdir}/" -xzf go.tar.gz
+    export PATH=$PATH:$go_path/bin
+fi    
+go version
+
+#
+# test
+#
+echo running testcommand
+$testcommand "$BUILDKITE_PIPELINE_SLUG:$tag_sha"
+testcommand_returncode=$?
+if [ $testcommand_returncode -ne 0 ]; then
+    echo "testcommand returned exitcode $testcommand_returncode"
+    exit $testcommand_returncode
+fi
+
+#
+# execute
+#
+$buildkite_agent annotate --style info "goreleaser [$version]"
+
+if [ $goreleaser_snapshot -gt 0 ]; then
+    goreleaser --rm-dist --snapshot
+else
+    goreleaser --rm-dist
+fi

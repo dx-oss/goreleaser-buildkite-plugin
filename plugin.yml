@@ -1,0 +1,103 @@
+name: "goreleaser"
+description: Buildkite plugin that execute goreleaser
+author: https://github.com/dx-oss
+requirements: ["docker","buildkite-agent","aws"]
+configuration:
+  version:
+    name: string
+    description: Version using [CONFIG:VERSION, META:VERSION, ENV:VERSION, ENV:BUILDKITE_TAG] variables if not set (required)
+  tags:
+    name: array
+    description: Image tags
+  tag_script:
+    name: string
+    description: A script file in the repo that will be executed to generate a tag name (appended to tags)
+  tag_sha:
+    name: int
+    description: if value is greater then zero the plugin will add the git short sha as tag
+  name_aws:
+    name: string
+    description: Name used for aws if image not set
+  name_jfrog:
+    name: string
+    description: Name used for jfrog if image not set
+  name_dockerhub:
+    name: string
+    description: Name used for dockerhub if image not set
+  name_github:
+    name: string
+    description: Name used for github if image not set
+  namespace:
+    name: string
+    description: Namespace, it is used if image not set
+  image:
+    name: string
+    description: Which name for docker image (IMAGE)
+  providers:
+    type: array
+    name: array
+    description: Where to push the nuget url a env key, default (REGISTRY_PROVIDER)
+  registry:
+    name: string
+    description: Registry host, default (REGISTRY_SERVER)
+  registry_name:
+    name: string
+    description: Registry name, default (REGISTRY_NAME)
+  registry_region:
+    name: string
+    description: Registry region, default (REGISTRY_REGION)
+  registry_account:
+    name: string
+    description: Registry account id, default (REGISTRY_ACCOUNT)
+  auth_user:
+    name: string
+    description: Docker username key (AUTH_USER)
+  auth_secret:
+    name: string
+    description: Docker token key (AUTH_SECRET)
+  role:
+    name: string
+    description: If the provider required a assume of a role, default (AUTH_ROLE)
+  file:
+    name: string
+    description: Alternative Dockerfile
+  linter:
+    name: int
+    description: if value is greater then zero the plugin will execute linter to the dockerfile
+  wrkdir:
+    name: string
+    description: Alternative working directory
+  debug:
+    name: int
+    description: if value is greater then zero the plugin will expose debug information. when the value are 2 it will also expose extended information.
+  nocache:
+    name: int
+    description: if value is greater then zero the plugin add nocache to the docker build
+  ssh:
+    name: int
+    description: if value is greater then zero the plugin would add ~/.ssh/id_rsa to SSH_PRIVATE_KEY build_arg
+  ssh_file:
+    name: string
+    description: if set the the ssh_file will be added as SSH_PRIVATE_KEY as build_arg
+  github:
+    name: int
+    description: if value is greater then zero the plugin would add GITHUB_TOKEN to build_arg
+  github_key:
+    name: string
+    description: Get the github token from this key instead of (GITHUB_TOKEN)
+  build:
+    name: int
+    description: if value is greater then zero the plugin it would build
+  push:
+    name: int
+    description: if value is greater then zero the plugin it would push
+  buildkit:
+    name: int
+    description: if value is greater then zero the plugin would use buildkit
+  agent:
+    name: string
+    description: buildkite-agent binary (https://github.com/buildkite/agent)
+  repo_override:
+    type: string
+    description: overrides $git_repo (used for naming sometimes (in github always)))
+  additionalProperties: false
