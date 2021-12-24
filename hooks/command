@@ -98,7 +98,13 @@ if [ $github -eq 1 ]; then
         echo "Cannot find GITHUB_TOKEN"
         exit 1
     fi
+
+    # ssh
+    if [ $ssh -eq 1 ]; then
+        ssh -T git@github.com | echo "Test github with ssh"
+    fi
 fi
+
 
 #
 # docker
