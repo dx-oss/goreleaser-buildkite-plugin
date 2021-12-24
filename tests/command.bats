@@ -4,7 +4,7 @@ load '/usr/local/lib/bats/load.bash'
 
 # https://github.com/sstephenson/bats
 
-@test "Build a dotnet nuget package" {
+@test "goreleaser" {
   stub buildkite-agent "annotate : echo $ver"
   stub docker "run : echo $ver"
 

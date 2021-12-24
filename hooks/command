@@ -52,10 +52,6 @@ goreleaser_binary="/usr/local/bin/goreleaser"
 goreleaser_config=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_CONFIG:-".goreleaser.yml"}
 goreleaser_version=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_VERSION:-"v1.2.2"}
 goreleaser_snapshot=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_SNAPSHOT:-0}
-build=${DOCKER_DEFAULT_BUILD:-1}
-build=${BUILDKITE_PLUGIN_GORELEASER_BUILD:-$build}
-push=${DOCKER_DEFAULT_PUSH:-1}
-push=${BUILDKITE_PLUGIN_GORELEASER_PUSH:-$push}
 
 buildkite_agent=${BUILDKITE_PLUGIN_GORELEASER_AGENT:-buildkite-agent}
 docker=${BUILDKITE_PLUGIN_GORELEASER_DOCKER:-docker}
@@ -103,9 +99,13 @@ docker_file=$file
 docker_login=$push          # we dont need to login if not going to push
 docker_buildkit=${BUILDKITE_PLUGIN_GORELEASER_BUILDKIT:-$DOCKER_BUILDKIT}
 docker_buildkit=${docker_buildkit:-1}
-docker_registry_region=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY_REGION}
-docker_registry_account=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY_ACCOUNT}
 docker_registry_required=1
+
+if [ -z "$BUILDKITE_PLUGIN_GORELEASER_PROVIDERS" ]; then
+    echo "Providers is required"
+    exit 1
+fi
+
 declare -a docker_providers
 if plugin_read_list_into_result BUILDKITE_PLUGIN_GORELEASER_PROVIDERS ; then
   for key in "${!result[@]}" ; do
@@ -122,13 +122,12 @@ declare -A image_names
 for docker_provider in "${docker_providers[@]}"; do
     image=${BUILDKITE_PLUGIN_GORELEASER_IMAGE:-""}
     goreleaser_image=${BUILDKITE_PLUGIN_GORELEASER_GORELEASER_IMAGE:-"${image}:latest"}
-    docker_registry=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY}
+    docker_registry=${BUILDKITE_PLUGIN_GORELEASER_REGISTRY:-$REGISTRY}
     docker_auth_user=${BUILDKITE_PLUGIN_GORELEASER_AUTH_USER}
     docker_auth_secret=${BUILDKITE_PLUGIN_GORELEASER_AUTH_SECRET}
     docker_role=${BUILDKITE_PLUGIN_GORELEASER_ROLE:-""}
     docker_logged_in=0
-    if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then
-        name=${BUILDKITE_PLUGIN_GORELEASER_NAME_AWS:-$git_repo}
+    if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then        
         echo "Using aws ecr"
 
         ###
@@ -147,9 +146,15 @@ for docker_provider in "${docker_providers[@]}"; do
         fi
         ###
 
-        docker_registry=${AWS_ECR_REGISTRY:-$docker_registry}
-        docker_registry_name=${name:-$AWS_ECR_REGISTRY_NAME}
-        docker_registry_name=${name:-$BUILDKITE_PIPELINE_SLUG}
+        docker_registry_region=${BUILDKITE_PLUGIN_GORELEASER_AWS_REGION}
+        docker_registry_account=${BUILDKITE_PLUGIN_GORELEASER_AWS_ACCOUNT}
+
+        docker_registry=${docker_registry:-BUILDKITE_PLUGIN_GORELEASER_AWS_REGISTRY}
+        docker_registry=${docker_registry:-$AWS_ECR_REGISTRY}
+
+        docker_registry_name=${BUILDKITE_PLUGIN_GORELEASER_AWS_NAME:-$git_repo}
+        docker_registry_name=${docker_registry_name:-$AWS_ECR_REGISTRY_NAME}
+        docker_registry_name=${docker_registry_name:-$BUILDKITE_PIPELINE_SLUG}
 
         docker_auth_user=${AWS_ECR_AUTH_USER:-$AWS_ACCESS_KEY_ID}
         docker_auth_secret=${AWS_ECR_AUTH_SECRET:-$AWS_SECRET_ACCESS_KEY}
@@ -192,7 +197,7 @@ for docker_provider in "${docker_providers[@]}"; do
         docker_auth_secret=${DOCKERHUB_SECRET}
         image=${image:="${namespace}/${name}"}
     elif [ "$docker_provider" = "github" ]; then
-        name=${BUILDKITE_PLUGIN_GORELEASER_NAME_GITHUB:-$git_repo}
+        name=${BUILDKITE_PLUGIN_GORELEASER_GITHUB_NAME:-$git_repo}
         docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
         docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
         docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}

@@ -18,28 +18,25 @@ configuration:
   name_aws:
     name: string
     description: Name used for aws if image not set
-  name_jfrog:
-    name: string
-    description: Name used for jfrog if image not set
+
   name_dockerhub:
     name: string
     description: Name used for dockerhub if image not set
-  name_github:
-    name: string
-    description: Name used for github if image not set
+
   namespace:
     name: string
     description: Namespace, it is used if image not set
   image:
     name: string
     description: Which name for docker image (IMAGE)
-  providers:
+
+  registry_providers:
     type: array
     name: array
-    description: Where to push the nuget url a env key, default (REGISTRY_PROVIDER)
+    description: Registry providers, default (REGISTRY_PROVIDERS)
   registry:
     name: string
-    description: Registry host, default (REGISTRY_SERVER)
+    description: Registry host, default (REGISTRY)
   registry_name:
     name: string
     description: Registry name, default (REGISTRY_NAME)
@@ -49,6 +46,7 @@ configuration:
   registry_account:
     name: string
     description: Registry account id, default (REGISTRY_ACCOUNT)
+
   auth_user:
     name: string
     description: Docker username key (AUTH_USER)
@@ -58,12 +56,11 @@ configuration:
   role:
     name: string
     description: If the provider required a assume of a role, default (AUTH_ROLE)
+
   file:
     name: string
     description: Alternative Dockerfile
-  linter:
-    name: int
-    description: if value is greater then zero the plugin will execute linter to the dockerfile
+
   wrkdir:
     name: string
     description: Alternative working directory
@@ -73,24 +70,24 @@ configuration:
   nocache:
     name: int
     description: if value is greater then zero the plugin add nocache to the docker build
+
   ssh:
     name: int
     description: if value is greater then zero the plugin would add ~/.ssh/id_rsa to SSH_PRIVATE_KEY build_arg
   ssh_file:
     name: string
     description: if set the the ssh_file will be added as SSH_PRIVATE_KEY as build_arg
+
   github:
     name: int
     description: if value is greater then zero the plugin would add GITHUB_TOKEN to build_arg
   github_key:
     name: string
     description: Get the github token from this key instead of (GITHUB_TOKEN)
-  build:
-    name: int
-    description: if value is greater then zero the plugin it would build
-  push:
-    name: int
-    description: if value is greater then zero the plugin it would push
+  github_name:
+    name: string
+    description: Name used for github if image not set
+
   buildkit:
     name: int
     description: if value is greater then zero the plugin would use buildkit
