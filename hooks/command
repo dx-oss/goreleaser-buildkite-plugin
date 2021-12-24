@@ -343,6 +343,9 @@ fi
 #
 # execute
 #
+echo "GORELEASER_CURRENT_TAG=${version}"
+export GORELEASER_CURRENT_TAG=$version
+
 $buildkite_agent annotate --style info "goreleaser [$version]"
 
 if [ $goreleaser_snapshot -gt 0 ]; then
