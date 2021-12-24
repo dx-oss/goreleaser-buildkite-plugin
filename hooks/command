@@ -105,8 +105,7 @@ fi
 # 
 
 # docker - check if a key is set and it exists in env, if not use default env
-docker_file=$file
-docker_login=$push          # we dont need to login if not going to push
+docker_login=1
 docker_buildkit=${BUILDKITE_PLUGIN_GORELEASER_BUILDKIT:-$DOCKER_BUILDKIT}
 docker_buildkit=${docker_buildkit:-1}
 docker_registry_required=1
@@ -136,6 +135,7 @@ for docker_provider in "${docker_providers[@]}"; do
     docker_auth_user=${BUILDKITE_PLUGIN_GORELEASER_AUTH_USER}
     docker_auth_secret=${BUILDKITE_PLUGIN_GORELEASER_AUTH_SECRET}
     docker_role=${BUILDKITE_PLUGIN_GORELEASER_ROLE:-""}
+    docker_login=1
     docker_logged_in=0
     if [ "$docker_provider" = "ecr" ] || [ "$docker_provider" = "aws" ]; then        
         echo "Using aws ecr"
