@@ -154,7 +154,7 @@ for docker_provider in "${docker_providers[@]}"; do
                 cd ${tmpdir}
                 echo "Download ${aws_url} to ${aws_file}"
                 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${aws_file}"
-                unzip -q "${aws_file}"
+                unzip -o -q "${aws_file}"
                 rm "${aws_file}"
                 awscli="${tmpdir}/aws/dist/aws"
                 if [ ! -x $awscli ]; then
