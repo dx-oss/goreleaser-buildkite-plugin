@@ -157,6 +157,10 @@ for docker_provider in "${docker_providers[@]}"; do
                 unzip -q "${aws_file}"
                 rm "${aws_file}"
                 awscli="${tmpdir}/aws/dist/aws"
+                if [ ! -x $awscli ]; then
+                    echo "${awscli} is not executable"
+                    exit 1
+                fi
                 echo "${awscli} --version"
                 $awscli --version
                 cd ${wrkdir}
@@ -275,14 +279,23 @@ if [ -x "${goreleaser_binary}" ]; then
     echo "${goreleaser_binary} allreay installed"
 else
     # TODO: check sum
+    cd ${tmpdir}
     goreleaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
-    goreleaser_file="${tmpdir}/goreleaser.tar.gz"
+    goreleaser_file="/goreleaser.tar.gz"
     echo "install goreleaser (${goreleaser_url})"
     curl -L "${goreleaser_url}" -o "${goreleaser_file}"
     tar -zxvf "${goreleaser_file}"
     rm "${goreleaser_file}"
     chmod +x goreleaser
+    ls -lah
     goreleaser_binary="${tmpdir}/goreleaser"
+    if [ ! -x $goreleaser_binary ]; then
+        echo "${goreleaser_binary} is not executable"
+        exit 1
+    fi
+    echo "${goreleaser_binary} --version"
+    $goreleaser_binary --version
+    cd $wrkdir
 fi
 
 #
