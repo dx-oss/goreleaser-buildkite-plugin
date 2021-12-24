@@ -275,8 +275,8 @@ else
     # TODO: check sum
     goreleaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
     goreleaser_file="${tmpdir}/goreleaser.tar.gz"
-    echo "install goreleaser (${gorelaser_url})"
-    curl -L "${gorelaser_url}" -o "${goreleaser_file}"
+    echo "install goreleaser (${goreleaser_url})"
+    curl -L "${goreleaser_url}" -o "${goreleaser_file}"
     tar -zxvf "${goreleaser_file}"
     rm "${goreleaser_file}"
     chmod +x goreleaser
