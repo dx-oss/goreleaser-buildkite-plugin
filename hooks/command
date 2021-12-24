@@ -345,6 +345,7 @@ fi
 #
 echo "GORELEASER_CURRENT_TAG=${version}"
 export GORELEASER_CURRENT_TAG=$version
+git describe --tags
 
 $buildkite_agent annotate --style info "goreleaser [$version]"
 
