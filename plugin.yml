@@ -64,6 +64,9 @@ configuration:
   wrkdir:
     name: string
     description: Alternative working directory
+  tmpdir:
+    name: string
+    description: Alternative temp directory    
   debug:
     name: int
     description: if value is greater then zero the plugin will expose debug information. when the value are 2 it will also expose extended information.

@@ -28,21 +28,31 @@ plugin_read_list_into_result() {
 # https://ss64.com/bash/syntax-condition.html
 set -eo pipefail
 
-# common
-# aws=$(whereis aws)
-# if [ -x $aws ]; then
-#     aws --version
-# else
-#     echo "aws command not exists"
-# fi
-# aws=$(whereis docker)
-# if [ -x $aws ]; then
-#     docker --version
-# else
-#     echo "docker command not exists"
-# fi
-
+#
+# wrkdir
+#
 pwd=$(pwd)
+wrkdir=${BUILDKITE_PLUGIN_GORELEASER_WRKDIR:-$pwd}
+if [ ! -d "$wrkdir" ]; then
+    echo "Working directory ($wrkdir) does not exists"
+    exit 1
+fi
+cd $wrkdir
+wrkdir=$(pwd)
+tmpdir=${BUILDKITE_PLUGIN_GORELEASER_TMPDIR:-$wrkdir}
+if [ ! -d "$tmpdir" ]; then
+    echo "Temporary directory ($tmpdir) does not exists"
+    exit 1
+fi
+cd $tmpdir
+tmpdir=$(pwd)
+echo "cd $wrkdir"
+cd $wrkdir
+
+
+#
+# defaults
+#
 testcommand=${BUILDKITE_PLUGIN_GORELEASER_TEST_COMMAND:-"echo no test command on image:"}
 nocache=${BUILDKITE_PLUGIN_GORELEASER_NOCACHE:-1}
 ssh=${BUILDKITE_PLUGIN_GORELEASER_SSH:-0}
@@ -101,10 +111,10 @@ docker_buildkit=${BUILDKITE_PLUGIN_GORELEASER_BUILDKIT:-$DOCKER_BUILDKIT}
 docker_buildkit=${docker_buildkit:-1}
 docker_registry_required=1
 
-if [ -z "$BUILDKITE_PLUGIN_GORELEASER_PROVIDERS" ]; then
-    echo "Providers is required"
-    exit 1
-fi
+# if [ -z "$BUILDKITE_PLUGIN_GORELEASER_PROVIDERS" ]; then
+#     echo "Providers is required ($BUILDKITE_PLUGIN_GORELEASER_PROVIDERS)"
+#     exit 1
+# fi
 
 declare -a docker_providers
 if plugin_read_list_into_result BUILDKITE_PLUGIN_GORELEASER_PROVIDERS ; then
@@ -133,17 +143,23 @@ for docker_provider in "${docker_providers[@]}"; do
         ###
         echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
         awscli="aws"
-        aws --version > aws_cli_ver.txt 2>&1
-        cat aws_cli_ver.txt
-        aws_cli_v1=$(grep -c "aws-cli/1" aws_cli_ver.txt)
+        aws_cli_ver_file="${tmpdir}/aws_cli_ver.txt"        
+        aws --version > $aws_cli_ver_file 2>&1
+        cat $aws_cli_ver_file
+        aws_cli_v1=$(grep -c "aws-cli/1" "${aws_cli_ver_file}")
         if [ $aws_cli_v1 -gt 0 ]; then
             if [ ! -x "aws/dist/aws" ]; then
-                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                unzip -q awscliv2.zip
-                awscli=${wrkdir}/aws/dist/aws
+                aws_url="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
+                aws_file="awscliv2.zip"
+                echo "Download ${aws_url} to ${aws_file}"
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${aws_file}"
+                unzip -q "${aws_file}"
+                rm "${aws_file}"
+                awscli="${tmpdir}/aws/dist/aws"
+                echo "${awscli} --version"
                 $awscli --version
             fi
-        fi
+        fi        
         ###
 
         docker_registry_region=${BUILDKITE_PLUGIN_GORELEASER_AWS_REGION}
@@ -253,16 +269,18 @@ fi
 #
 # goreleaser
 #
-if [ -x "$goreleaser_binary" ]; then
-    echo "$goreleaser_binary allreay installed"
+if [ -x "${goreleaser_binary}" ]; then
+    echo "${goreleaser_binary} allreay installed"
 else
     # TODO: check sum
-    gorelaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
+    goreleaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
+    goreleaser_file="${tmpdir}/goreleaser.tar.gz"
     echo "install goreleaser (${gorelaser_url})"
-    curl -L "${gorelaser_url}" -o "goreleaser.tar.gz"
-    tar -zxvf goreleaser.tar.gz
+    curl -L "${gorelaser_url}" -o "${goreleaser_file}"
+    tar -zxvf "${goreleaser_file}"
+    rm "${goreleaser_file}"
     chmod +x goreleaser
-    goreleaser_binary="${wrkdir}/goreleaser"
+    goreleaser_binary="${tmpdir}/goreleaser"
 fi
 
 #
