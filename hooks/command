@@ -330,10 +330,10 @@ else
         go_version="1.17.5"
         go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
         curl -L "${go_url}" -o "go.tar.gz"
-        tar -C "${tmpdir}/" -xzf go.tar.gz
-        export PATH=$PATH:$go_path/bin
+        tar -C "${tmpdir}/" -xzf go.tar.gz        
         cd $wrkdir
     fi
+    export PATH=$PATH:$go_path/bin
     if [ ! -x $go_binary ]; then
         echo "${go_binary} is not executable"
         exit 1
