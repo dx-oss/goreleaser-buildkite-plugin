@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+
+export BUILDKITE_CLEAN_CHECKOUT="true"
