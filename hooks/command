@@ -140,7 +140,10 @@ for docker_provider in "${docker_providers[@]}"; do
         cat $aws_cli_ver_file
         aws_cli_v1=$(grep -c "aws-cli/1" "${aws_cli_ver_file}")
         if [ $aws_cli_v1 -gt 0 ]; then
-            if [ ! -x "aws/dist/aws" ]; then
+            awscli="${tmpdir}/aws/dist/aws"
+            if [ -x "${awscli}" ]; then
+                echo "${awscli} already installed"
+            else
                 aws_url="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
                 aws_file="awscliv2.zip"
                 cd ${tmpdir}
@@ -148,14 +151,13 @@ for docker_provider in "${docker_providers[@]}"; do
                 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${aws_file}"
                 unzip -o -q "${aws_file}"
                 rm "${aws_file}"
-                awscli="${tmpdir}/aws/dist/aws"
-                if [ ! -x $awscli ]; then
-                    echo "${awscli} is not executable"
-                    exit 1
-                fi
                 echo "${awscli} --version"
                 $awscli --version
                 cd ${wrkdir}
+            fi
+            if [ ! -x $awscli ]; then
+                echo "${awscli} is not executable"
+                exit 1
             fi
         fi
         ###
@@ -285,25 +287,29 @@ fi
 # goreleaser
 #
 if [ -x "${goreleaser_binary}" ]; then
-    echo "${goreleaser_binary} allreay installed"
+    echo "${goreleaser_binary} already installed"
 else
-    # TODO: check sum
-    cd ${tmpdir}
-    goreleaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
-    goreleaser_file="goreleaser.tar.gz"
-    echo "install goreleaser (${goreleaser_url})"
-    curl -L "${goreleaser_url}" -o "${goreleaser_file}"
-    tar -zxvf "${goreleaser_file}"
-    rm "${goreleaser_file}"
-    chmod +x goreleaser
     goreleaser_binary="${tmpdir}/goreleaser"
+    if [ -x "${goreleaser_binary}" ]; then
+        echo "${goreleaser_binary} already installed"
+    else
+        # TODO: check sum
+        cd ${tmpdir}
+        goreleaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
+        goreleaser_file="goreleaser.tar.gz"
+        echo "install goreleaser (${goreleaser_url})"
+        curl -L "${goreleaser_url}" -o "${goreleaser_file}"
+        tar -zxvf "${goreleaser_file}"
+        rm "${goreleaser_file}"
+        chmod +x goreleaser
+        echo "${goreleaser_binary} --version"
+        $goreleaser_binary --version
+        cd $wrkdir
+    fi
     if [ ! -x $goreleaser_binary ]; then
         echo "${goreleaser_binary} is not executable"
         exit 1
     fi
-    echo "${goreleaser_binary} --version"
-    $goreleaser_binary --version
-    cd $wrkdir
 fi
 
 #
@@ -311,16 +317,27 @@ fi
 #
 go_path=/usr/local/go
 go_binary="${go_path}/bin/go"
-if [ ! -x "$go_binary" ]; then
-    cd ${tmpdir}
+if [ -x "$go_binary" ]; then
+    echo "${go_binary} already installed"
+else
     go_path="${tmpdir}/go"
-    mkdir -p $go_path
-    go_version="1.17.5"
-    go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
-    curl -L "${go_url}" -o "go.tar.gz"
-    tar -C "${tmpdir}/" -xzf go.tar.gz
-    export PATH=$PATH:$go_path/bin
-    cd $wrkdir
+    go_binary="${go_path}/bin/go"
+    if [ -x "$go_binary" ]; then
+        echo "${go_binary} already installed"
+    else
+        cd ${tmpdir}
+        mkdir -p $go_path
+        go_version="1.17.5"
+        go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
+        curl -L "${go_url}" -o "go.tar.gz"
+        tar -C "${tmpdir}/" -xzf go.tar.gz
+        export PATH=$PATH:$go_path/bin
+        cd $wrkdir
+    fi
+    if [ ! -x $go_binary ]; then
+        echo "${go_binary} is not executable"
+        exit 1
+    fi
 fi
 go version
 #export GOPROXY=direct
