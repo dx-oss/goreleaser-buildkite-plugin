@@ -281,7 +281,7 @@ else
     # TODO: check sum
     cd ${tmpdir}
     goreleaser_url="https://github.com/goreleaser/goreleaser/releases/download/${goreleaser_version}/goreleaser_Linux_x86_64.tar.gz"
-    goreleaser_file="/goreleaser.tar.gz"
+    goreleaser_file="goreleaser.tar.gz"
     echo "install goreleaser (${goreleaser_url})"
     curl -L "${goreleaser_url}" -o "${goreleaser_file}"
     tar -zxvf "${goreleaser_file}"
