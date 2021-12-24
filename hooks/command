@@ -304,13 +304,15 @@ fi
 go_path=/usr/local/go
 go_binary="${go_path}/bin/go"
 if [ ! -x "$go_binary" ]; then
-    go_path="${wrkdir}/go"
+    cd ${tmpdir}
+    go_path="${tmpdir}/go"
     mkdir -p $go_path
     go_version="1.17.5"
     go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
     curl -L "${go_url}" -o "go.tar.gz"
-    tar -C "${wrkdir}/" -xzf go.tar.gz
+    tar -C "${tmpdir}/" -xzf go.tar.gz
     export PATH=$PATH:$go_path/bin
+    cd $wrkdir
 fi    
 go version
 
