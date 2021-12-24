@@ -151,6 +151,7 @@ for docker_provider in "${docker_providers[@]}"; do
             if [ ! -x "aws/dist/aws" ]; then
                 aws_url="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
                 aws_file="awscliv2.zip"
+                cd ${tmpdir}
                 echo "Download ${aws_url} to ${aws_file}"
                 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "${aws_file}"
                 unzip -q "${aws_file}"
@@ -158,6 +159,7 @@ for docker_provider in "${docker_providers[@]}"; do
                 awscli="${tmpdir}/aws/dist/aws"
                 echo "${awscli} --version"
                 $awscli --version
+                cd ${wrkdir}
             fi
         fi        
         ###
