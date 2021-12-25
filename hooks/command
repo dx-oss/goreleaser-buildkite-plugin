@@ -75,8 +75,7 @@ if [ $debug -gt 0 ]; then
     fi
 
     $docker version
-    $docker ps
-    aws --version
+    $docker ps    
     whoami
     pwd
 fi
@@ -95,6 +94,8 @@ git_repo=$(echo "${BUILDKITE_PLUGIN_GORELEASER_REPO_OVERRIDE:-$BUILDKITE_REPO}" 
 #
 # docker
 #
+
+docker version
 
 # docker - check if a key is set and it exists in env, if not use default env
 docker_login=1
@@ -133,6 +134,7 @@ for docker_provider in "${docker_providers[@]}"; do
         echo "Using aws ecr"
 
         ###
+        aws --version
         echo "TODO: REMOVE THIS WHEN WE HAVE THE AWS VERSION IN AGENT(!)"
         awscli="aws"
         aws_cli_ver_file="${tmpdir}/aws_cli_ver.txt"
