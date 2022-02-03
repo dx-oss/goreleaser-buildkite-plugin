@@ -258,6 +258,7 @@ for docker_provider in "${docker_providers[@]}"; do
                 echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin
             else
                 echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin "${docker_registry}"
+            fi
         else
             echo "TODO: fix assume role"
             exit 1
