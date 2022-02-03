@@ -102,6 +102,7 @@ docker_login=1
 docker_buildkit=${BUILDKITE_PLUGIN_GORELEASER_BUILDKIT:-$DOCKER_BUILDKIT}
 docker_buildkit=${docker_buildkit:-1}
 docker_registry_required=1
+docker_registry_skip_host_on_login=0
 
 # if [ -z "$BUILDKITE_PLUGIN_GORELEASER_PROVIDERS" ]; then
 #     echo "Providers is required ($BUILDKITE_PLUGIN_GORELEASER_PROVIDERS)"
@@ -211,6 +212,7 @@ for docker_provider in "${docker_providers[@]}"; do
         DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
         docker_registry=${DOCKER_REGISTRY}
         docker_registry_required=1
+        docker_registry_skip_host_on_login=1
         docker_role=""
         docker_auth_user=${DOCKERHUB_USER}
         docker_auth_secret=${DOCKERHUB_SECRET}
@@ -252,7 +254,10 @@ for docker_provider in "${docker_providers[@]}"; do
     if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
         if [ "${docker_role}" == "" ]; then
             echo "Login into ${docker_registry} with ${docker_auth_user}"
-            echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin "${docker_registry}"
+            if [ $docker_registry_skip_host_on_login -gt 0 ]; then
+                echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin
+            else
+                echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin "${docker_registry}"
         else
             echo "TODO: fix assume role"
             exit 1
