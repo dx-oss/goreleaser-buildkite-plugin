@@ -206,7 +206,7 @@ for docker_provider in "${docker_providers[@]}"; do
         name=${BUILDKITE_PLUGIN_GORELEASER_NAME_DOCKERHUB:-$git_repo}
         namespace=${BUILDKITE_PLUGIN_GORELEASER_NAMESPACE_DOCKERHUB:-$git_owner}
         echo "Using dockerhub"
-        DOCKER_REGISTRY=${DOCKERHUB_REGISTRY}
+        DOCKER_REGISTRY=${DOCKERHUB_REGISTRY:-"docker.com"}
         DOCKER_AUTH_USER=${DOCKERHUB_USER}
         DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
         docker_registry=${DOCKERHUB_REGISTRY}
