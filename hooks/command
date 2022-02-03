@@ -209,7 +209,7 @@ for docker_provider in "${docker_providers[@]}"; do
         DOCKER_REGISTRY=${DOCKERHUB_REGISTRY:-"docker.com"}
         DOCKER_AUTH_USER=${DOCKERHUB_USER}
         DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
-        docker_registry=${DOCKERHUB_REGISTRY}
+        docker_registry=${DOCKER_REGISTRY}
         docker_registry_required=1
         docker_role=""
         docker_auth_user=${DOCKERHUB_USER}
