@@ -210,7 +210,8 @@ for docker_provider in "${docker_providers[@]}"; do
         DOCKER_AUTH_USER=${DOCKERHUB_USER}
         DOCKER_AUTH_SECRET=${DOCKERHUB_SECRET}
         docker_registry=${DOCKERHUB_REGISTRY}
-        docker_registry_required=0
+        docker_registry_required=1
+        docker_role=""
         docker_auth_user=${DOCKERHUB_USER}
         docker_auth_secret=${DOCKERHUB_SECRET}
         image=${image:="${namespace}/${name}"}
@@ -250,7 +251,7 @@ for docker_provider in "${docker_providers[@]}"; do
     # We want only to login if needed
     if [ $docker_login -gt 0 ] && [ $docker_logged_in -eq 0 ]; then
         if [ "${docker_role}" == "" ]; then
-            echo "Login into ${docker_registry}"
+            echo "Login into ${docker_registry} with ${docker_auth_user}"
             echo "${docker_auth_secret}" | $docker login -u "${docker_auth_user}" --password-stdin "${docker_registry}"
         else
             echo "TODO: fix assume role"
