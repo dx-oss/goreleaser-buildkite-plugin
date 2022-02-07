@@ -227,7 +227,7 @@ for docker_provider in "${docker_providers[@]}"; do
                 docker_registry=${docker_registry_legacy_host}
             fi
         fi
-        docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
+        docker_registry="${docker_registry}/${git_owner}/${git_repo}"
         docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
         docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
         image=${image:-$name}
