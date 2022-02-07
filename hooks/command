@@ -219,6 +219,14 @@ for docker_provider in "${docker_providers[@]}"; do
         image=${image:="${namespace}/${name}"}
     elif [ "$docker_provider" = "github" ]; then
         name=${BUILDKITE_PLUGIN_GORELEASER_GITHUB_NAME:-$git_repo}
+        docker_registry_legacy=${GITHUB_PACKAGE_DOCKER_REGISTRY_LEGACY:-0}
+        docker_registry_legacy_host=${GITHUB_PACKAGE_DOCKER_REGISTRY_HOST_LEGACY:-"docker.pkg.github.com"}
+        docker_registry=${GITHUB_PACKAGE_DOCKER_REGISTRY_HOST:-"ghcr.io"}
+        if [ $docker_registry_legacy -gt 0 ]; then
+            if [ "${docker_registry_legacy_host}" != "" ]; then
+                docker_registry=${docker_registry_legacy_host}
+            fi
+        fi
         docker_registry="${GITHUB_PACKAGE_DOCKER_REGISTRY}/${git_owner}/${git_repo}"
         docker_auth_user=${GITHUB_PACKAGE_DOCKER_USER}
         docker_auth_secret=${GITHUB_PACKAGE_DOCKER_SECRET}
