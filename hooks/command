@@ -344,7 +344,7 @@ else
     else
         cd ${tmpdir}
         mkdir -p $go_path
-        go_version="1.17.5"
+        go_version="1.23.1"
         go_url="https://dl.google.com/go/go${go_version}.linux-amd64.tar.gz"
         curl -L "${go_url}" -o "go.tar.gz"
         tar -C "${tmpdir}/" -xzf go.tar.gz        
