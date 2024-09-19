@@ -60,7 +60,7 @@ ssh_file=${BUILDKITE_PLUGIN_GORELEASER_SSH_FILE:-"~/.ssh/id_rsa"}
 github=${BUILDKITE_PLUGIN_GORELEASER_GITHUB:-0}
 goreleaser_binary="/usr/local/bin/goreleaser"
 goreleaser_config=${BUILDKITE_PLUGIN_GORELEASER_CONFIG:-".goreleaser.yml"}
-goreleaser_version=${BUILDKITE_PLUGIN_GORELEASER_VERSION:-"v1.2.2"}
+goreleaser_version=${BUILDKITE_PLUGIN_GORELEASER_VERSION:-"v2.3.2"}
 goreleaser_snapshot=${BUILDKITE_PLUGIN_GORELEASER_SNAPSHOT:-0}
 goprivate=${BUILDKITE_PLUGIN_GORELEASER_GOPRIVATE:-""}
 
