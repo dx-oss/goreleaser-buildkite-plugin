@@ -384,7 +384,7 @@ git describe --tags
 $buildkite_agent annotate --style info "goreleaser [$version]"
 
 if [ $goreleaser_snapshot -gt 0 ]; then
-    $goreleaser_binary --rm-dist --snapshot
+    $goreleaser_binary --clean --snapshot
 else
-    $goreleaser_binary --rm-dist
+    $goreleaser_binary --clean
 fi
