@@ -291,7 +291,10 @@ fi
 
 # github
 if [ $github -gt 0 ]; then
-    github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
+    github_token=""
+    if [ -n "${BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY:-}" ]; then
+        github_token=${!BUILDKITE_PLUGIN_DOCKER_IMAGE_GITHUB_KEY}
+    fi
     github_token=${github_token:-$GITHUB_TOKEN}
     if [ -z $github_token ]; then
         echo "Cannot find GITHUB_TOKEN"
