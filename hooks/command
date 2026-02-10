@@ -199,10 +199,15 @@ for docker_provider in "${docker_providers[@]}"; do
             fi
         fi
 
-        # Only login if docker_login is greater than zero
-        echo "Login [${docker_registry}]"
-        $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
-        docker_logged_in=1
+        # Only login if docker_login is greater than zero and credential helper is not active
+        if [ "${BUILDKITE_PLUGIN_ECR_CREDENTIAL_HELPER:-}" = "true" ]; then
+            echo "ECR credential helper is active, skipping docker login for [${docker_registry}]"
+            docker_logged_in=1
+        else
+            echo "Login [${docker_registry}]"
+            $awscli ecr get-login-password --region ${docker_registry_region} | docker login --username AWS --password-stdin ${docker_registry}
+            docker_logged_in=1
+        fi
     elif [ "$docker_provider" = "dockerhub" ] || [ "$docker_provider" = "docker" ]; then
         name=${BUILDKITE_PLUGIN_GORELEASER_NAME_DOCKERHUB:-$git_repo}
         namespace=${BUILDKITE_PLUGIN_GORELEASER_NAMESPACE_DOCKERHUB:-$git_owner}
