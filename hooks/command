@@ -141,7 +141,7 @@ for docker_provider in "${docker_providers[@]}"; do
         aws_cli_ver_file="${tmpdir}/aws_cli_ver.txt"
         aws --version > $aws_cli_ver_file 2>&1
         cat $aws_cli_ver_file
-        aws_cli_v1=$(grep -c "aws-cli/1" "${aws_cli_ver_file}")
+        aws_cli_v1=$(grep -c "aws-cli/1" "${aws_cli_ver_file}" || true)
         if [ $aws_cli_v1 -gt 0 ]; then
             awscli="${tmpdir}/aws/dist/aws"
             if [ -x "${awscli}" ]; then
